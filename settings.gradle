@@ -23,6 +23,7 @@ buildCache {
 
 // Core Projects
 include 'newrelic-api'
+include 'opentelemetry-agent-extension'
 include 'newrelic-scala-api'
 include 'newrelic-scala-cats-api'
 include 'newrelic-cats-effect3-api'
