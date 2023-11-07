@@ -4,7 +4,7 @@ An [OpenTelemetry Java Agent extension](https://github.com/open-telemetry/opente
 
 ## Usage
 
-To use, follow the [OpenTelemetry Java Agent extension](https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/examples/extension/README.md) instructions, running your application with the OpenTelemetry java agent and specifying that the path to the NewRelic OpenTelemetry Agent extension:
+To use, follow the [OpenTelemetry Java Agent extension](https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/examples/extension/README.md) instructions, running your application with the OpenTelemetry java agent and specifying the path to the NewRelic OpenTelemetry Agent extension:
 
 ```shell
 java \
