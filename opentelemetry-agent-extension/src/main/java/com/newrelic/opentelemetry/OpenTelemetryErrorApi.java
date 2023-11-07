@@ -3,6 +3,7 @@ package com.newrelic.opentelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 
 import java.util.Map;
 
@@ -45,10 +46,12 @@ public final class OpenTelemetryErrorApi {
     public void noticeError(Throwable throwable, Map<String, ?> params, boolean expected) {
         Attributes attributes = OpenTelemetryNewRelic.toAttributes(params).putAll(expected ? EXPECTED_ERROR_ATTRIBUTES : UNEXPECTED_ERROR_ATTRIBUTES).build();
         Span.current().recordException(throwable, attributes);
+        Span.current().setStatus(StatusCode.ERROR);
     }
 
     public void noticeError(Throwable throwable, boolean expected) {
         Span.current().recordException(throwable, expected ? EXPECTED_ERROR_ATTRIBUTES : UNEXPECTED_ERROR_ATTRIBUTES);
+        Span.current().setStatus(StatusCode.ERROR);
     }
 
     public void noticeError(String message, Map<String, ?> params, boolean expected) {

@@ -5,7 +5,8 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
-import io.opentelemetry.sdk.trace.data.EventData;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import io.opentelemetry.sdk.trace.data.StatusData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -39,7 +40,7 @@ class OpenTelemetryErrorApiTest {
 
     @ParameterizedTest
     @MethodSource("operationArgs")
-    void operationArgs(Runnable runnable, Consumer<EventData> eventConsumer) {
+    void operationArgs(Runnable runnable, Consumer<SpanData> spanConsumer) {
         Span span = openTelemetry.getOpenTelemetry().getTracer("scopeName").spanBuilder("spanName").startSpan();
         try (Scope unused = span.makeCurrent()) {
             runnable.run();
@@ -48,99 +49,130 @@ class OpenTelemetryErrorApiTest {
         }
 
         assertThat(openTelemetry.getSpans())
-                .satisfiesExactly(spanData -> assertThat(spanData.getEvents()).satisfiesExactly(eventConsumer));
+                .satisfiesExactly(spanConsumer);
     }
 
     private static Stream<Arguments> operationArgs() {
         return Stream.of(
                 Arguments.of(
                         (Runnable) () -> OpenTelemetryNewRelic.noticeError(new Throwable("error"), Collections.singletonMap("key", "value")),
-                        eventAssert(event -> assertThat(event)
-                                .hasName("exception")
-                                .hasAttributesSatisfying(
-                                        equalTo(AttributeKey.stringKey("key"), "value"),
-                                        equalTo(AttributeKey.booleanKey("expected.error"), false),
-                                        equalTo(AttributeKey.stringKey("exception.message"), "error"),
-                                        equalTo(AttributeKey.stringKey("exception.type"), "java.lang.Throwable"),
-                                        satisfies(AttributeKey.stringKey("exception.stacktrace"), value -> assertThat(value).isNotNull())
-                                ))),
+                        spanAssert(span -> assertThat(span)
+                                .hasStatus(StatusData.error())
+                                .hasEventsSatisfyingExactly(event -> event.hasName("exception")
+                                        .hasAttributesSatisfying(
+                                                equalTo(AttributeKey.stringKey("key"), "value"),
+                                                equalTo(AttributeKey.booleanKey("expected.error"), false),
+                                                equalTo(AttributeKey.stringKey("exception.message"), "error"),
+                                                equalTo(AttributeKey.stringKey("exception.type"), "java.lang.Throwable"),
+                                                satisfies(AttributeKey.stringKey("exception.stacktrace"), value -> assertThat(value).isNotNull())
+                                        )))),
                 Arguments.of(
                         (Runnable) () -> OpenTelemetryNewRelic.noticeError(new Throwable("error")),
-                        eventAssert(event -> assertThat(event)
-                                .hasName("exception")
-                                .hasAttributesSatisfying(
-                                        equalTo(AttributeKey.booleanKey("expected.error"), false),
-                                        equalTo(AttributeKey.stringKey("exception.message"), "error"),
-                                        equalTo(AttributeKey.stringKey("exception.type"), "java.lang.Throwable"),
-                                        satisfies(AttributeKey.stringKey("exception.stacktrace"), value -> assertThat(value).isNotNull())
-                                ))),
+                        spanAssert(span -> assertThat(span)
+                                .hasStatus(StatusData.error())
+                                .hasEventsSatisfyingExactly(event -> event
+                                        .hasName("exception")
+                                        .hasAttributesSatisfying(
+                                                equalTo(AttributeKey.booleanKey("expected.error"), false),
+                                                equalTo(AttributeKey.stringKey("exception.message"), "error"),
+                                                equalTo(AttributeKey.stringKey("exception.type"), "java.lang.Throwable"),
+                                                satisfies(AttributeKey.stringKey("exception.stacktrace"), value -> assertThat(value).isNotNull())
+                                        )))),
                 Arguments.of(
                         (Runnable) () -> OpenTelemetryNewRelic.noticeError("error", Collections.singletonMap("key", "value")),
-                        eventAssert(event -> assertThat(event)
-                                .hasName("exception")
-                                .hasAttributesSatisfying(
-                                        equalTo(AttributeKey.stringKey("key"), "value"),
-                                        equalTo(AttributeKey.booleanKey("expected.error"), false),
-                                        equalTo(AttributeKey.stringKey("exception.message"), "error"),
-                                        equalTo(AttributeKey.stringKey("exception.type"), "com.newrelic.opentelemetry.OpenTelemetryErrorApi.ReportedError"),
-                                        satisfies(AttributeKey.stringKey("exception.stacktrace"), value -> assertThat(value).isNotNull())
-                                ))),
+                        spanAssert(span -> assertThat(span)
+                                .hasStatus(StatusData.error())
+                                .hasEventsSatisfyingExactly(event -> event
+                                        .hasName("exception")
+                                        .hasAttributesSatisfying(
+                                                equalTo(AttributeKey.stringKey("key"), "value"),
+                                                equalTo(AttributeKey.booleanKey("expected.error"), false),
+                                                equalTo(AttributeKey.stringKey("exception.message"), "error"),
+                                                equalTo(AttributeKey.stringKey("exception.type"),
+                                                        "com.newrelic.opentelemetry.OpenTelemetryErrorApi.ReportedError"),
+                                                satisfies(AttributeKey.stringKey("exception.stacktrace"),
+                                                        value -> assertThat(value).isNotNull())
+                                        )))),
                 Arguments.of(
                         (Runnable) () -> OpenTelemetryNewRelic.noticeError("error"),
-                        eventAssert(event -> assertThat(event)
-                                .hasName("exception")
-                                .hasAttributesSatisfying(
-                                        equalTo(AttributeKey.booleanKey("expected.error"), false),
-                                        equalTo(AttributeKey.stringKey("exception.message"), "error"),
-                                        equalTo(AttributeKey.stringKey("exception.type"), "com.newrelic.opentelemetry.OpenTelemetryErrorApi.ReportedError"),
-                                        satisfies(AttributeKey.stringKey("exception.stacktrace"), value -> assertThat(value).isNotNull())
-                                ))),
+                        spanAssert(span -> assertThat(span)
+                                .hasStatus(StatusData.error())
+                                .hasEventsSatisfyingExactly(event -> event
+                                        .hasName("exception")
+                                        .hasAttributesSatisfying(
+                                                equalTo(AttributeKey.booleanKey("expected.error"), false),
+                                                equalTo(AttributeKey.stringKey("exception.message"), "error"),
+                                                equalTo(AttributeKey.stringKey("exception.type"),
+                                                        "com.newrelic.opentelemetry.OpenTelemetryErrorApi.ReportedError"),
+                                                satisfies(AttributeKey.stringKey("exception.stacktrace"),
+                                                        value -> assertThat(value).isNotNull())
+                                        )))),
                 Arguments.of(
-                        (Runnable) () -> OpenTelemetryNewRelic.noticeError(new Throwable("error"), Collections.singletonMap("key", "value"), true),
-                        eventAssert(event -> assertThat(event)
-                                .hasName("exception")
-                                .hasAttributesSatisfying(
-                                        equalTo(AttributeKey.stringKey("key"), "value"),
-                                        equalTo(AttributeKey.booleanKey("expected.error"), true),
-                                        equalTo(AttributeKey.stringKey("exception.message"), "error"),
-                                        equalTo(AttributeKey.stringKey("exception.type"), "java.lang.Throwable"),
-                                        satisfies(AttributeKey.stringKey("exception.stacktrace"), value -> assertThat(value).isNotNull())
-                                ))),
+                        (Runnable) () -> OpenTelemetryNewRelic.noticeError(new Throwable("error"),
+                                Collections.singletonMap("key", "value"), true),
+                        spanAssert(span -> assertThat(span)
+                                .hasStatus(StatusData.error())
+                                .hasEventsSatisfyingExactly(event -> event
+                                        .hasName("exception")
+                                        .hasAttributesSatisfying(
+                                                equalTo(AttributeKey.stringKey("key"), "value"),
+                                                equalTo(AttributeKey.booleanKey("expected.error"), true),
+                                                equalTo(AttributeKey.stringKey("exception.message"), "error"),
+                                                equalTo(AttributeKey.stringKey("exception.type"), "java.lang.Throwable"),
+                                                satisfies(AttributeKey.stringKey("exception.stacktrace"),
+                                                        value -> assertThat(value).isNotNull())
+                                        )))),
                 Arguments.of(
                         (Runnable) () -> OpenTelemetryNewRelic.noticeError(new Throwable("error"), true),
-                        eventAssert(event -> assertThat(event)
-                                .hasName("exception")
-                                .hasAttributesSatisfying(
-                                        equalTo(AttributeKey.booleanKey("expected.error"), true),
-                                        equalTo(AttributeKey.stringKey("exception.message"), "error"),
-                                        equalTo(AttributeKey.stringKey("exception.type"), "java.lang.Throwable"),
-                                        satisfies(AttributeKey.stringKey("exception.stacktrace"), value -> assertThat(value).isNotNull())
-                                ))),
+                        spanAssert(span -> assertThat(span)
+                                .hasStatus(StatusData.error())
+                                .hasEventsSatisfyingExactly(event -> event
+                                        .hasName("exception")
+                                        .hasAttributesSatisfying(
+                                                equalTo(AttributeKey.booleanKey("expected.error"), true),
+                                                equalTo(AttributeKey.stringKey("exception.message"), "error"),
+                                                equalTo(AttributeKey.stringKey("exception.type"),
+                                                        "java.lang.Throwable"),
+                                                satisfies(AttributeKey.stringKey("exception.stacktrace"),
+                                                        value -> assertThat(value).isNotNull())
+                                        )))),
                 Arguments.of(
-                        (Runnable) () -> OpenTelemetryNewRelic.noticeError("error", Collections.singletonMap("key", "value"), true),
-                        eventAssert(event -> assertThat(event)
-                                .hasName("exception")
-                                .hasAttributesSatisfying(
-                                        equalTo(AttributeKey.stringKey("key"), "value"),
-                                        equalTo(AttributeKey.booleanKey("expected.error"), true),
-                                        equalTo(AttributeKey.stringKey("exception.message"), "error"),
-                                        equalTo(AttributeKey.stringKey("exception.type"), "com.newrelic.opentelemetry.OpenTelemetryErrorApi.ReportedError"),
-                                        satisfies(AttributeKey.stringKey("exception.stacktrace"), value -> assertThat(value).isNotNull())
-                                ))),
+                        (Runnable) () -> OpenTelemetryNewRelic.noticeError("error",
+                                Collections.singletonMap("key", "value"), true),
+                        spanAssert(span -> assertThat(span)
+                                .hasStatus(StatusData.error())
+                                .hasEventsSatisfyingExactly(event -> event
+                                        .hasName("exception")
+                                        .hasAttributesSatisfying(
+                                                equalTo(AttributeKey.stringKey("key"), "value"),
+                                                equalTo(AttributeKey.booleanKey("expected.error"), true),
+                                                equalTo(AttributeKey.stringKey("exception.message"), "error"),
+                                                equalTo(AttributeKey.stringKey("exception.type"),
+                                                        "com.newrelic.opentelemetry.OpenTelemetryErrorApi.ReportedError"),
+                                                satisfies(AttributeKey.stringKey("exception.stacktrace"),
+                                                        value -> assertThat(value).isNotNull())
+                                        )))),
                 Arguments.of(
                         (Runnable) () -> OpenTelemetryNewRelic.noticeError("error", true),
-                        eventAssert(event -> assertThat(event)
-                                .hasName("exception")
-                                .hasAttributesSatisfying(
-                                        equalTo(AttributeKey.booleanKey("expected.error"), true),
-                                        equalTo(AttributeKey.stringKey("exception.message"), "error"),
-                                        equalTo(AttributeKey.stringKey("exception.type"), "com.newrelic.opentelemetry.OpenTelemetryErrorApi.ReportedError"),
-                                        satisfies(AttributeKey.stringKey("exception.stacktrace"), value -> assertThat(value).isNotNull())
-                                )))
+                        spanAssert(span -> assertThat(span)
+                                .hasStatus(StatusData.error())
+                                .hasEventsSatisfyingExactly(event -> event
+                                        .hasName("exception")
+                                        .hasAttributesSatisfying(
+                                                equalTo(AttributeKey.booleanKey("expected.error"),
+                                                        true),
+                                                equalTo(AttributeKey.stringKey("exception.message"),
+                                                        "error"),
+                                                equalTo(AttributeKey.stringKey("exception.type"),
+                                                        "com.newrelic.opentelemetry.OpenTelemetryErrorApi.ReportedError"),
+                                                satisfies(
+                                                        AttributeKey.stringKey("exception.stacktrace"),
+                                                        value -> assertThat(value).isNotNull())
+                                        ))))
         );
     }
 
-    private static Consumer<EventData> eventAssert(Consumer<EventData> eventConsumer) {
+    private static Consumer<SpanData> spanAssert(Consumer<SpanData> eventConsumer) {
         return eventConsumer;
     }
 
