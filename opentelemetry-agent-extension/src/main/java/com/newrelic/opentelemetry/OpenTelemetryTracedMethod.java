@@ -51,7 +51,7 @@ final class OpenTelemetryTracedMethod implements TracedMethod {
 
     @Override
     public void setMetricName(String... metricNameParts) {
-        Span.current().updateName(String.join("/", metricNameParts));
+        OpenTelemetryNewRelic.logUnsupportedMethod("TracedMethod", "setMetricName");
     }
 
     @Override

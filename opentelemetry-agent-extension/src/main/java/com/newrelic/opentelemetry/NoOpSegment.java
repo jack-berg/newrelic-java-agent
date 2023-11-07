@@ -1,55 +1,46 @@
 package com.newrelic.opentelemetry;
 
 import com.newrelic.api.agent.ExternalParameters;
-import com.newrelic.api.agent.NewRelic;
 import com.newrelic.api.agent.OutboundHeaders;
 import com.newrelic.api.agent.Segment;
 import com.newrelic.api.agent.Transaction;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
 
 import java.util.Map;
 
-final class OpenTelemetrySegment implements Segment {
+final class NoOpSegment implements Segment {
 
-    private final Span span;
+    private static final NoOpSegment INSTANCE = new NoOpSegment();
 
-    private OpenTelemetrySegment(Span span) {
-        this.span = span;
+    private NoOpSegment() {
     }
 
-    static OpenTelemetrySegment start(Tracer tracer, String segmentName) {
-        return new OpenTelemetrySegment(tracer.spanBuilder(segmentName)
-                .startSpan());
+    static NoOpSegment getInstance() {
+        return INSTANCE;
     }
 
     @Override
     public void addCustomAttribute(String key, Number value) {
-        if (value instanceof Double || value instanceof Float) {
-            span.setAttribute(key, value.doubleValue());
-        } else {
-            span.setAttribute(key, value.intValue());
-        }
+        OpenTelemetryNewRelic.logUnsupportedMethod("Segment", "addCustomAttribute");
     }
 
     @Override
     public void addCustomAttribute(String key, String value) {
-        span.setAttribute(key, value);
+        OpenTelemetryNewRelic.logUnsupportedMethod("Segment", "addCustomAttribute");
     }
 
     @Override
     public void addCustomAttribute(String key, boolean value) {
-        span.setAttribute(key, value);
+        OpenTelemetryNewRelic.logUnsupportedMethod("Segment", "addCustomAttribute");
     }
 
     @Override
     public void addCustomAttributes(Map<String, Object> attributes) {
-        span.setAllAttributes(OpenTelemetryNewRelic.toAttributes(attributes).build());
+        OpenTelemetryNewRelic.logUnsupportedMethod("Segment", "addCustomAttributes");
     }
 
     @Override
     public void setMetricName(String... metricNameParts) {
-        span.updateName(String.join("/", metricNameParts));
+        OpenTelemetryNewRelic.logUnsupportedMethod("Segment", "setMetricName");
     }
 
     @Override
@@ -65,7 +56,7 @@ final class OpenTelemetrySegment implements Segment {
     @Override
     public Transaction getTransaction() {
         OpenTelemetryNewRelic.logUnsupportedMethod("Segment", "getTransaction");
-        return NewRelic.getAgent().getTransaction();
+        return OpenTelemetryTransaction.getInstance();
     }
 
     @Override
@@ -75,11 +66,11 @@ final class OpenTelemetrySegment implements Segment {
 
     @Override
     public void end() {
-        span.end();
+        OpenTelemetryNewRelic.logUnsupportedMethod("Segment", "end");
     }
 
     @Override
     public void endAsync() {
-        span.end();
+        OpenTelemetryNewRelic.logUnsupportedMethod("Segment", "endAsync");
     }
 }

@@ -10,42 +10,24 @@ import com.newrelic.api.agent.TracedMethod;
 import com.newrelic.api.agent.Transaction;
 import com.newrelic.api.agent.TransactionNamePriority;
 import com.newrelic.api.agent.TransportType;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-import static com.newrelic.opentelemetry.OpenTelemetryNewRelic.SCOPE_NAME;
 
 final class OpenTelemetryTransaction implements Transaction {
 
-    private final Tracer tracer;
+    private static final OpenTelemetryTransaction INSTANCE = new OpenTelemetryTransaction();
 
-    private OpenTelemetryTransaction(OpenTelemetry openTelemetry) {
-        this.tracer = openTelemetry.getTracer(SCOPE_NAME);
+    private OpenTelemetryTransaction() {
     }
 
-    static OpenTelemetryTransaction create(OpenTelemetry openTelemetry) {
-        return new OpenTelemetryTransaction(openTelemetry);
+    static OpenTelemetryTransaction getInstance() {
+        return INSTANCE;
     }
 
     @Override
     public boolean setTransactionName(TransactionNamePriority namePriority, boolean override, String category, String... parts) {
-        List<String> spanNameParts = new ArrayList<>();
-        spanNameParts.add(category == null ? "Java" : category);
-        spanNameParts.addAll(Arrays.asList(parts));
-        String spanName = spanNameParts.stream()
-                .filter(Objects::nonNull)
-                .map(segment -> segment.startsWith("/") ? segment.substring(1) : segment)
-                .collect(Collectors.joining("/"));
-        Span.current().updateName(spanName);
-        return true;
+        OpenTelemetryNewRelic.logUnsupportedMethod("Transaction", "setTransactionName");
+        return false;
     }
 
     @Override
@@ -125,7 +107,6 @@ final class OpenTelemetryTransaction implements Transaction {
 
     @Override
     public void ignoreErrors() {
-        // TODO: should ignoreErrors modify the behavior of OpenTelemetryErrorApi?
         OpenTelemetryNewRelic.logUnsupportedMethod("Transaction", "ignoreErrors");
     }
 
@@ -147,12 +128,14 @@ final class OpenTelemetryTransaction implements Transaction {
 
     @Override
     public Segment startSegment(String segmentName) {
-        return OpenTelemetrySegment.start(tracer, segmentName);
+        OpenTelemetryNewRelic.logUnsupportedMethod("Transaction", "startSegment");
+        return NoOpSegment.getInstance();
     }
 
     @Override
     public Segment startSegment(String category, String segmentName) {
-        return OpenTelemetrySegment.start(tracer, String.join("/", category, segmentName));
+        OpenTelemetryNewRelic.logUnsupportedMethod("Transaction", "startSegment");
+        return NoOpSegment.getInstance();
     }
 
     @Override

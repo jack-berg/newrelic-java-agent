@@ -16,9 +16,12 @@ import static com.newrelic.opentelemetry.OpenTelemetryNewRelic.SCOPE_NAME;
 
 final class OpenTelemetryMetricsAggregator implements MetricAggregator {
 
-    private static final String NEWRELIC_TIMESLICE_HISTOGRAM_VALUE_METRIC = "newrelic.timeslice.histogram.value";
+    private static final double NANOS_PER_SECOND = TimeUnit.SECONDS.toNanos(1);
+
+    // Rename because customers expect to query newrelic.timeslice.value. Would be ideal to use for counter as well, but can't have different types.
+    private static final String NEWRELIC_TIMESLICE_HISTOGRAM_VALUE_METRIC = "newrelic.timeslice.value";
     private static final String NEWRELIC_TIMESLICE_COUNTER_VALUE_METRIC = "newrelic.timeslice.counter.value";
-    private static final AttributeKey<String> NEWRELIC_TIMESLICE_ATTRIBUTE_KEY = AttributeKey.stringKey("newrelic.timeslice_name");
+    private static final AttributeKey<String> NEWRELIC_TIMESLICE_ATTRIBUTE_KEY = AttributeKey.stringKey("metricTimesliceName");
 
     private final Map<String, Attributes> timesliceAttributesCache = new ConcurrentHashMap<>();
 
@@ -42,20 +45,22 @@ final class OpenTelemetryMetricsAggregator implements MetricAggregator {
 
     @Override
     public void recordResponseTimeMetric(String name, long totalTime, long exclusiveTime, TimeUnit timeUnit) {
-        long nanos = timeUnit.toNanos(totalTime);
-        timesliceHistogram.record(nanos / 1.0e9, attributeForTimeslice(name));
+        timesliceHistogram.record(convertToSeconds(totalTime, timeUnit), attributeForTimeslice(name));
     }
 
     @Override
     public void recordResponseTimeMetric(String name, long millis) {
-        long nanos = TimeUnit.MILLISECONDS.toNanos(millis);
-        timesliceHistogram.record(nanos / 1.0e9, attributeForTimeslice(name));
+        timesliceHistogram.record(convertToSeconds(millis, TimeUnit.MILLISECONDS), attributeForTimeslice(name));
+    }
+
+    private static double convertToSeconds(long timeValue, TimeUnit timeUnit) {
+        long nanos = timeUnit.toNanos(timeValue);
+        return nanos / NANOS_PER_SECOND;
     }
 
     @Override
     public void incrementCounter(String name) {
         timesliceCounter.add(1, attributeForTimeslice(name));
-
     }
 
     @Override

@@ -37,11 +37,11 @@ class OpenTelemetryMetricAggregatorTest {
 
         assertThat(openTelemetry.getMetrics())
                 .satisfiesExactlyInAnyOrder(
-                        metricData -> assertThat(metricData).hasName("newrelic.timeslice.histogram.value")
+                        metricData -> assertThat(metricData).hasName("newrelic.timeslice.value")
                                 .hasHistogramSatisfying(histogram -> histogram.hasPointsSatisfying(
-                                        point -> point.hasAttributes(Attributes.builder().put("newrelic.timeslice_name", "name1").build())
+                                        point -> point.hasAttributes(Attributes.builder().put("metricTimesliceName", "name1").build())
                                                 .hasSum(20.0).hasCount(2),
-                                        point -> point.hasAttributes(Attributes.builder().put("newrelic.timeslice_name", "name2").build())
+                                        point -> point.hasAttributes(Attributes.builder().put("metricTimesliceName", "name2").build())
                                                 .hasSum(20.0)
                                                 .hasCount(2)
                                 ))
@@ -57,11 +57,11 @@ class OpenTelemetryMetricAggregatorTest {
 
         assertThat(openTelemetry.getMetrics())
                 .satisfiesExactlyInAnyOrder(
-                        metricData -> assertThat(metricData).hasName("newrelic.timeslice.histogram.value")
+                        metricData -> assertThat(metricData).hasName("newrelic.timeslice.value")
                                 .hasHistogramSatisfying(histogram -> histogram.hasPointsSatisfying(
-                                        point -> point.hasAttributes(Attributes.builder().put("newrelic.timeslice_name", "test-response-time1").build())
+                                        point -> point.hasAttributes(Attributes.builder().put("metricTimesliceName", "test-response-time1").build())
                                                 .hasSum(0.02).hasCount(2),
-                                        point -> point.hasAttributes(Attributes.builder().put("newrelic.timeslice_name", "test-response-time2").build())
+                                        point -> point.hasAttributes(Attributes.builder().put("metricTimesliceName", "test-response-time2").build())
                                                 .hasSum(0.02)
                                                 .hasCount(2)
                                 ))
@@ -79,9 +79,9 @@ class OpenTelemetryMetricAggregatorTest {
                 .satisfiesExactlyInAnyOrder(
                         metricData -> assertThat(metricData).hasName("newrelic.timeslice.counter.value")
                                 .hasDoubleSumSatisfying(sum -> sum.hasPointsSatisfying(
-                                        point -> point.hasAttributes(Attributes.builder().put("newrelic.timeslice_name", "test-counter1").build())
+                                        point -> point.hasAttributes(Attributes.builder().put("metricTimesliceName", "test-counter1").build())
                                                 .hasValue(3.0),
-                                        point -> point.hasAttributes(Attributes.builder().put("newrelic.timeslice_name", "test-counter2").build()).hasValue(3.0)
+                                        point -> point.hasAttributes(Attributes.builder().put("metricTimesliceName", "test-counter2").build()).hasValue(3.0)
                                 ))
                 );
     }

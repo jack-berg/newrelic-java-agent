@@ -4,7 +4,6 @@ import com.newrelic.api.agent.Agent;
 import com.newrelic.api.agent.ErrorGroupCallback;
 import com.newrelic.api.agent.Request;
 import com.newrelic.api.agent.Response;
-import com.newrelic.api.agent.TransactionNamePriority;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributesBuilder;
 
@@ -18,7 +17,7 @@ public final class OpenTelemetryNewRelic {
     private static final OpenTelemetryAgent NOOP_AGENT = OpenTelemetryAgent.create(OpenTelemetry.noop());
     static Logger LOGGER = Logger.getLogger(OpenTelemetryNewRelic.class.getName());
     // TODO: add scope version
-    static String SCOPE_NAME = "com.newrelic.newrelic-opentelemetry-bridge";
+    static String SCOPE_NAME = "com.newrelic.opentelemetry-bridge";
 
     private static final AtomicReference<OpenTelemetryAgent> AGENT_REF = new AtomicReference<>(NOOP_AGENT);
 
@@ -94,19 +93,19 @@ public final class OpenTelemetryNewRelic {
     // **************************** Transaction APIs ********************************//
 
     public static void addCustomParameter(String key, Number value) {
-        getAgent().getTracedMethod().addCustomAttribute(key, value);
+        logUnsupportedMethod("NewRelic", "addCustomParameter");
     }
 
     public static void addCustomParameter(String key, String value) {
-        getAgent().getTracedMethod().addCustomAttribute(key, value);
+        logUnsupportedMethod("NewRelic", "addCustomParameter");
     }
 
     public static void addCustomParameter(String key, boolean value) {
-        getAgent().getTracedMethod().addCustomAttribute(key, value);
+        logUnsupportedMethod("NewRelic", "addCustomParameter");
     }
 
     public static void addCustomParameters(Map<String, Object> params) {
-        getAgent().getTracedMethod().addCustomAttributes(params);
+        logUnsupportedMethod("NewRelic", "addCustomParameters");
     }
 
     public static void setUserId(String userId) {
@@ -114,9 +113,7 @@ public final class OpenTelemetryNewRelic {
     }
 
     public static void setTransactionName(String category, String name) {
-        getAgent()
-                .getTransaction()
-                .setTransactionName(TransactionNamePriority.CUSTOM_LOW, true, category, name);
+        logUnsupportedMethod("NewRelic", "setTransactionName");
     }
 
     public static void ignoreTransaction() {

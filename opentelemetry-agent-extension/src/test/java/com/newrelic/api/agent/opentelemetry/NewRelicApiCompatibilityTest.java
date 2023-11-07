@@ -25,12 +25,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.event.Level;
+import org.slf4j.event.LoggingEvent;
 
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,17 +55,15 @@ class NewRelicApiCompatibilityTest {
 
         // Run operation, and verify no exception and no warning logs
         assertThatCode(operation::run).doesNotThrowAnyException();
-        assertThat(logCapturer.getEvents()).isEmpty();
+        assertThat(logCapturer.getEvents().stream().map(LoggingEvent::getMessage).collect(Collectors.toList())).isEmpty();
     }
 
     private static Stream<Arguments> supportedOperationsArgs() {
         OpenTelemetryAgent agent = (OpenTelemetryAgent) OpenTelemetryNewRelic.getAgent();
         TracedMethod tracedMethod = agent.getTracedMethod();
         Transaction transaction = agent.getTransaction();
-        Segment segment = transaction.startSegment("segmentName");
         MetricAggregator metricAggregator = agent.getMetricAggregator();
         Insights insights = agent.getInsights();
-        TraceMetadata traceMetadata = agent.getTraceMetadata();
         return Stream.of(
                 // OpenTelemetryNewRelic
                 Arguments.of((Runnable) () -> OpenTelemetryNewRelic.getAgent()),
@@ -79,38 +79,19 @@ class NewRelicApiCompatibilityTest {
                 Arguments.of((Runnable) () -> OpenTelemetryNewRelic.noticeError(new Throwable(), false)),
                 Arguments.of((Runnable) () -> OpenTelemetryNewRelic.noticeError("message", Collections.emptyMap(), false)),
                 Arguments.of((Runnable) () -> OpenTelemetryNewRelic.noticeError("message", false)),
-                Arguments.of((Runnable) () -> OpenTelemetryNewRelic.addCustomParameter("key", 1)),
-                Arguments.of((Runnable) () -> OpenTelemetryNewRelic.addCustomParameter("key", "value")),
-                Arguments.of((Runnable) () -> OpenTelemetryNewRelic.addCustomParameter("key", false)),
-                Arguments.of((Runnable) () -> OpenTelemetryNewRelic.addCustomParameters(Collections.emptyMap())),
-                Arguments.of((Runnable) () -> OpenTelemetryNewRelic.setTransactionName("category", "name")),
                 // OpenTelemetryAgent
                 Arguments.of((Runnable) () -> agent.getTracedMethod()),
                 Arguments.of((Runnable) () -> agent.getTransaction()),
                 Arguments.of((Runnable) () -> agent.getMetricAggregator()),
                 Arguments.of((Runnable) () -> agent.getInsights()),
-                Arguments.of((Runnable) () -> agent.getTraceMetadata()),
-                Arguments.of((Runnable) () -> agent.getLinkingMetadata()),
                 // OpenTelemetryTracedMethod
                 Arguments.of((Runnable) () -> tracedMethod.addCustomAttribute("key", 1)),
                 Arguments.of((Runnable) () -> tracedMethod.addCustomAttribute("key", "value")),
                 Arguments.of((Runnable) () -> tracedMethod.addCustomAttribute("key", false)),
                 Arguments.of((Runnable) () -> tracedMethod.addCustomAttributes(Collections.emptyMap())),
-                Arguments.of((Runnable) () -> tracedMethod.setMetricName("metricNamePart")),
                 // OpenTelemetryTransaction
-                Arguments.of((Runnable) () -> transaction.setTransactionName(TransactionNamePriority.CUSTOM_LOW, false, "category", "part")),
                 Arguments.of((Runnable) () -> transaction.getLastTracer()),
                 Arguments.of((Runnable) () -> transaction.getTracedMethod()),
-                Arguments.of((Runnable) () -> transaction.startSegment("segmentName")),
-                Arguments.of((Runnable) () -> transaction.startSegment("category", "segmentName")),
-                // OpenTelemetrySegment
-                Arguments.of((Runnable) () -> segment.addCustomAttribute("key", 1)),
-                Arguments.of((Runnable) () -> segment.addCustomAttribute("key", "value")),
-                Arguments.of((Runnable) () -> segment.addCustomAttribute("key", false)),
-                Arguments.of((Runnable) () -> segment.addCustomAttributes(Collections.emptyMap())),
-                Arguments.of((Runnable) () -> segment.setMetricName("metricNamePart")),
-                Arguments.of((Runnable) () -> segment.end()),
-                Arguments.of((Runnable) () -> segment.endAsync()),
                 // OpenTelemetryMetricsAggregator
                 Arguments.of((Runnable) () -> metricAggregator.recordResponseTimeMetric("name", 1, 2, TimeUnit.DAYS)),
                 Arguments.of((Runnable) () -> metricAggregator.recordMetric("name", 1.1f)),
@@ -118,11 +99,7 @@ class NewRelicApiCompatibilityTest {
                 Arguments.of((Runnable) () -> metricAggregator.incrementCounter("name")),
                 Arguments.of((Runnable) () -> metricAggregator.incrementCounter("name", 1)),
                 // OpenTelemetryInsights
-                Arguments.of((Runnable) () -> insights.recordCustomEvent("eventType", Collections.emptyMap())),
-                // OpenTelemetryTraceMetadata
-                Arguments.of((Runnable) () -> traceMetadata.getTraceId()),
-                Arguments.of((Runnable) () -> traceMetadata.getSpanId()),
-                Arguments.of((Runnable) () -> traceMetadata.isSampled())
+                Arguments.of((Runnable) () -> insights.recordCustomEvent("eventType", Collections.emptyMap()))
         );
     }
 
@@ -154,9 +131,16 @@ class NewRelicApiCompatibilityTest {
         TracedMethod tracedMethod = agent.getTracedMethod();
         Transaction transaction = agent.getTransaction();
         Token token = transaction.getToken();
+        Segment segment = transaction.startSegment("segment");
         DistributedTracePayload distributedTracePayload = transaction.createDistributedTracePayload();
+        TraceMetadata traceMetadata = agent.getTraceMetadata();
         return Stream.of(
                 // OpenTelemetryNewRelic
+                Arguments.of((Runnable) () -> OpenTelemetryNewRelic.addCustomParameter("key", 1)),
+                Arguments.of((Runnable) () -> OpenTelemetryNewRelic.addCustomParameter("key", "value")),
+                Arguments.of((Runnable) () -> OpenTelemetryNewRelic.addCustomParameter("key", false)),
+                Arguments.of((Runnable) () -> OpenTelemetryNewRelic.addCustomParameters(Collections.emptyMap())),
+                Arguments.of((Runnable) () -> OpenTelemetryNewRelic.setTransactionName("category", "name")),
                 Arguments.of((Runnable) () -> OpenTelemetryNewRelic.setUserId("userId")),
                 Arguments.of((Runnable) () -> OpenTelemetryNewRelic.ignoreTransaction()),
                 Arguments.of((Runnable) () -> OpenTelemetryNewRelic.ignoreApdex()),
@@ -175,13 +159,17 @@ class NewRelicApiCompatibilityTest {
                 // OpenTelemetryAgent
                 Arguments.of((Runnable) () -> agent.getLogger()),
                 Arguments.of((Runnable) () -> agent.getConfig()),
+                Arguments.of((Runnable) () -> agent.getTraceMetadata()),
+                Arguments.of((Runnable) () -> agent.getLinkingMetadata()),
                 // OpenTelemetryTracedMethod
                 Arguments.of((Runnable) () -> tracedMethod.getMetricName()),
+                Arguments.of((Runnable) () -> tracedMethod.setMetricName("metricNamePart")),
                 Arguments.of((Runnable) () -> tracedMethod.addRollupMetricName("metricNamePart")),
                 Arguments.of((Runnable) () -> tracedMethod.reportAsExternal(new ExternalParameters() {
                 })),
                 Arguments.of((Runnable) () -> tracedMethod.addOutboundRequestHeaders(DUMMY_HEADERS)),
                 // OpenTelemetryTransaction
+                Arguments.of((Runnable) () -> transaction.setTransactionName(TransactionNamePriority.CUSTOM_LOW, false, "category", "part")),
                 Arguments.of((Runnable) () -> transaction.isTransactionNameSet()),
                 Arguments.of((Runnable) () -> transaction.ignore()),
                 Arguments.of((Runnable) () -> transaction.ignoreApdex()),
@@ -197,6 +185,8 @@ class NewRelicApiCompatibilityTest {
                 Arguments.of((Runnable) () -> transaction.convertToWebTransaction()),
                 Arguments.of((Runnable) () -> transaction.addOutboundResponseHeaders()),
                 Arguments.of((Runnable) () -> transaction.getToken()),
+                Arguments.of((Runnable) () -> transaction.startSegment("segmentName")),
+                Arguments.of((Runnable) () -> transaction.startSegment("category", "segmentName")),
                 Arguments.of((Runnable) () -> transaction.createDistributedTracePayload()),
                 Arguments.of((Runnable) () -> transaction.acceptDistributedTracePayload("payload")),
                 Arguments.of((Runnable) () -> transaction.acceptDistributedTracePayload(DUMMY_DISTRIBUTED_TRACE_PAYLOAD)),
@@ -208,6 +198,14 @@ class NewRelicApiCompatibilityTest {
                 Arguments.of((Runnable) () -> token.expire()),
                 Arguments.of((Runnable) () -> token.linkAndExpire()),
                 Arguments.of((Runnable) () -> token.isActive()),
+                // NoOpSegment
+                Arguments.of((Runnable) () -> segment.addCustomAttribute("key", 1)),
+                Arguments.of((Runnable) () -> segment.addCustomAttribute("key", "value")),
+                Arguments.of((Runnable) () -> segment.addCustomAttribute("key", false)),
+                Arguments.of((Runnable) () -> segment.addCustomAttributes(Collections.emptyMap())),
+                Arguments.of((Runnable) () -> segment.setMetricName("metricNamePart")),
+                Arguments.of((Runnable) () -> segment.end()),
+                Arguments.of((Runnable) () -> segment.endAsync()),
                 // NoOpDistributedTracePayload
                 Arguments.of((Runnable) () -> distributedTracePayload.text()),
                 Arguments.of((Runnable) () -> distributedTracePayload.httpSafe()),
@@ -247,7 +245,11 @@ class NewRelicApiCompatibilityTest {
                                 new Object())),
                 // NoOpConfig
                 Arguments.of((Runnable) () -> config.getValue("key")),
-                Arguments.of((Runnable) () -> config.getValue("key", "defaultVal"))
+                Arguments.of((Runnable) () -> config.getValue("key", "defaultVal")),
+                // NoOpTraceMetadata
+                Arguments.of((Runnable) () -> traceMetadata.getTraceId()),
+                Arguments.of((Runnable) () -> traceMetadata.getSpanId()),
+                Arguments.of((Runnable) () -> traceMetadata.isSampled())
         );
     }
 

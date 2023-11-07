@@ -60,26 +60,6 @@ class OpenTelemetryTracedMethodTest {
         attributes.put("bool_key2", false);
         attributes.put("string_key2", "value2");
         return Stream.of(
-                // OpenTelemetryNewRelic API
-                Arguments.of(
-                        (Runnable) () -> {
-                            OpenTelemetryNewRelic.addCustomParameter("double_key1", 1.1);
-                            OpenTelemetryNewRelic.addCustomParameter("long_key1", 1L);
-                            OpenTelemetryNewRelic.addCustomParameter("string_key1", "value1");
-                            OpenTelemetryNewRelic.addCustomParameter("bool_key1", true);
-                            OpenTelemetryNewRelic.addCustomParameters(attributes);
-                        },
-                        spanAssert(span -> assertThat(span)
-                                .hasAttributesSatisfying(
-                                        equalTo(AttributeKey.doubleKey("double_key1"), 1.1),
-                                        equalTo(AttributeKey.longKey("long_key1"), 1),
-                                        equalTo(AttributeKey.stringKey("string_key1"), "value1"),
-                                        equalTo(AttributeKey.booleanKey("bool_key1"), true),
-                                        satisfies(AttributeKey.doubleKey("double_key2"), value -> value.isCloseTo(2.2, Offset.offset(0.01))),
-                                        equalTo(AttributeKey.longKey("long_key2"), 2),
-                                        equalTo(AttributeKey.stringKey("string_key2"), "value2"),
-                                        equalTo(AttributeKey.booleanKey("bool_key2"), false)
-                                ))),
                 // OpenTelemetryTracedMethod API
                 Arguments.of(
                         (Runnable) () -> {
@@ -99,11 +79,7 @@ class OpenTelemetryTracedMethodTest {
                                         equalTo(AttributeKey.longKey("long_key2"), 2),
                                         equalTo(AttributeKey.stringKey("string_key2"), "value2"),
                                         equalTo(AttributeKey.booleanKey("bool_key2"), false)
-                                ))),
-                Arguments.of(
-                        (Runnable) () -> OpenTelemetryNewRelic.getAgent().getTracedMethod().setMetricName("part1", "part2"),
-                        spanAssert(span -> assertThat(span)
-                                .hasName("part1/part2")))
+                                )))
         );
     }
 

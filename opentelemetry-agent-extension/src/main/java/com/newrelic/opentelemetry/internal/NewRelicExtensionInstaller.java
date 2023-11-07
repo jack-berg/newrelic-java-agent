@@ -64,15 +64,15 @@ public class NewRelicExtensionInstaller implements BeforeAgentListener {
                     "com.newrelic.opentelemetry.NoOpConfig",
                     "com.newrelic.opentelemetry.NoOpDistributedTracePayload",
                     "com.newrelic.opentelemetry.NoOpLogger",
+                    "com.newrelic.opentelemetry.NoOpSegment",
                     "com.newrelic.opentelemetry.NoOpToken",
+                    "com.newrelic.opentelemetry.NoOpTraceMetadata",
                     "com.newrelic.opentelemetry.OpenTelemetryAgent",
                     "com.newrelic.opentelemetry.OpenTelemetryErrorApi",
                     "com.newrelic.opentelemetry.OpenTelemetryErrorApi$ReportedError",
                     "com.newrelic.opentelemetry.OpenTelemetryInsights",
                     "com.newrelic.opentelemetry.OpenTelemetryMetricsAggregator",
                     "com.newrelic.opentelemetry.OpenTelemetryNewRelic",
-                    "com.newrelic.opentelemetry.OpenTelemetrySegment",
-                    "com.newrelic.opentelemetry.OpenTelemetryTraceMetadata",
                     "com.newrelic.opentelemetry.OpenTelemetryTracedMethod",
                     "com.newrelic.opentelemetry.OpenTelemetryTransaction"
             );

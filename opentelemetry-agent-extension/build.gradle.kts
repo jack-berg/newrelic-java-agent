@@ -75,6 +75,7 @@ testing {
                 implementation("org.mock-server:mockserver-netty:5.15.0:shaded")
                 implementation("io.opentelemetry.proto:opentelemetry-proto:${openTelemetryProtoVersion}")
                 implementation("org.assertj:assertj-core:3.24.2")
+                implementation("org.awaitility:awaitility:4.2.0")
             }
 
             targets {

@@ -18,11 +18,13 @@ import com.newrelic.api.agent.TracedMethod;
 import com.newrelic.api.agent.Transaction;
 import com.newrelic.api.agent.TransactionNamePriority;
 import com.newrelic.api.agent.TransportType;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -191,22 +193,21 @@ class OpenTelemetryAgentExtensionSmokeTest {
         NewRelic.setInstanceName("instanceName");
         NewRelic.setErrorGroupCallback(errorData -> "groupingString");
 
-        // Sleep and validate span, metric, and log data was produced by the calls to the NewRelic API
-        Thread.sleep(2000);
-        assertThat(agentExtension.getMetricRequests())
-                .hasSizeGreaterThanOrEqualTo(1)
-                .anySatisfy(metricRequest -> assertThat(metricRequest.getResourceMetricsList().get(0).getScopeMetricsList())
-                        .anySatisfy(scopeMetrics -> assertThat(scopeMetrics.getScope().getName()).isEqualTo("com.newrelic.newrelic-opentelemetry-bridge")));
+        // Sleep and validate metric, and log data was produced by the calls to the NewRelic API
+        // Note, while the NewRelic API bridge adds attributes to spans, it does not create any new ones, so no spans are expected
+        Awaitility.await()
+                .atMost(Duration.ofSeconds(10))
+                .untilAsserted(() -> {
+                    assertThat(agentExtension.getMetricRequests())
+                            .hasSizeGreaterThanOrEqualTo(1)
+                            .anySatisfy(metricRequest -> assertThat(metricRequest.getResourceMetricsList().get(0).getScopeMetricsList())
+                                    .anySatisfy(scopeMetrics -> assertThat(scopeMetrics.getScope().getName()).isEqualTo("com.newrelic.opentelemetry-bridge")));
 
-        assertThat(agentExtension.getLogRequests())
-                .hasSizeGreaterThanOrEqualTo(1)
-                .anySatisfy(logRequest -> assertThat(logRequest.getResourceLogsList().get(0).getScopeLogsList())
-                        .anySatisfy(scopeLogs -> assertThat(scopeLogs.getScope().getName()).isEqualTo("com.newrelic.newrelic-opentelemetry-bridge")));
-
-        assertThat(agentExtension.getTraceRequests())
-                .hasSizeGreaterThanOrEqualTo(1)
-                .anySatisfy(traceRequest -> assertThat(traceRequest.getResourceSpansList().get(0).getScopeSpansList())
-                        .anySatisfy(scopeSpan -> assertThat(scopeSpan.getScope().getName()).isEqualTo("com.newrelic.newrelic-opentelemetry-bridge")));
+                    assertThat(agentExtension.getLogRequests())
+                            .hasSizeGreaterThanOrEqualTo(1)
+                            .anySatisfy(logRequest -> assertThat(logRequest.getResourceLogsList().get(0).getScopeLogsList())
+                                    .anySatisfy(scopeLogs -> assertThat(scopeLogs.getScope().getName()).isEqualTo("com.newrelic.opentelemetry-bridge")));
+                });
     }
 
     private static class HeadersImpl implements Headers {

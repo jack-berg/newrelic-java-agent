@@ -9,10 +9,8 @@ import com.newrelic.api.agent.TraceMetadata;
 import com.newrelic.api.agent.TracedMethod;
 import com.newrelic.api.agent.Transaction;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Span;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -23,15 +21,10 @@ import java.util.Objects;
  */
 public final class OpenTelemetryAgent implements Agent {
 
-    private static final String TRACE_ID = "trace.id";
-    private static final String SPAN_ID = "span.id";
-
-    private final OpenTelemetryTransaction openTelemetryTransaction;
     private final OpenTelemetryMetricsAggregator openTelemetryMetricsAggregator;
     private final OpenTelemetryInsights openTelemetryInsights;
 
     private OpenTelemetryAgent(OpenTelemetry openTelemetry) {
-        this.openTelemetryTransaction = OpenTelemetryTransaction.create(openTelemetry);
         this.openTelemetryMetricsAggregator = OpenTelemetryMetricsAggregator.create(openTelemetry);
         this.openTelemetryInsights = OpenTelemetryInsights.create(openTelemetry);
     }
@@ -48,7 +41,7 @@ public final class OpenTelemetryAgent implements Agent {
 
     @Override
     public Transaction getTransaction() {
-        return openTelemetryTransaction;
+        return OpenTelemetryTransaction.getInstance();
     }
 
     @Override
@@ -75,22 +68,14 @@ public final class OpenTelemetryAgent implements Agent {
 
     @Override
     public TraceMetadata getTraceMetadata() {
-        return new OpenTelemetryTraceMetadata(Span.current());
+        OpenTelemetryNewRelic.logUnsupportedMethod("Agent", "getTraceMetadata");
+        return NoOpTraceMetadata.getInstance();
     }
 
     @Override
     public Map<String, String> getLinkingMetadata() {
-        Map<String, String> metadata = new HashMap<>();
-
-        final Span span = Span.current();
-        if (span.getSpanContext().isValid()) {
-            metadata.put(TRACE_ID, span.getSpanContext().getTraceId());
-            metadata.put(SPAN_ID, span.getSpanContext().getSpanId());
-        }
-
-        // TODO: any other fields we can populate?
-
-        return Collections.unmodifiableMap(metadata);
+        OpenTelemetryNewRelic.logUnsupportedMethod("Agent", "getLinkingMetadata");
+        return Collections.emptyMap();
     }
 
     public OpenTelemetryErrorApi getErrorApi() {
